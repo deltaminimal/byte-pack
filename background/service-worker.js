@@ -28,6 +28,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleQuickSave(message.options || {}).then(sendResponse);
     return true;
   }
+  if (message.action === "QUICK_SAVE_PREVIEW") {
+    // Scan tabs and return the count only — no downloads triggered.
+    // Used by the popup on open to show how many images are ready.
+    handlePreviewScan().then(sendResponse);
+    return true;
+  }
 });
 
 /**
@@ -71,5 +77,20 @@ async function handleQuickSave(options) {
       failed: 0,
       errors: [error.message],
     };
+  }
+}
+/**
+ * Scans tabs and returns only the count of image tabs found.
+ * No downloads are triggered — this is purely for the popup
+ * preview on open.
+ *
+ * @returns {Promise<{count: number}>}
+ */
+async function handlePreviewScan() {
+  try {
+    const imageTabs = await scanForImageTabs();
+    return { count: imageTabs.length };
+  } catch {
+    return { count: 0 };
   }
 }

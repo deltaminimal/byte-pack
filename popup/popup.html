@@ -2,6 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Pre-paint flash prevention — must load before body renders -->
+    <script src="prepaint.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pixel Drop</title>
 
@@ -58,11 +60,27 @@
 
     <!-- ─── Main Content ─────────────────────────────────────── -->
     <main class="pd-main">
-      <!-- Idle state — shown before the user clicks Quick Save -->
+      <!-- Idle state — shown when scan is complete and ready to save -->
       <div class="pd-state" id="state-idle">
-        <p class="pd-state__message">
-          Ready to save all image tabs in this window.
-        </p>
+        <div class="pd-state__icon pd-state__icon--success" id="idle-icon">
+          <!-- Image icon -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+        </div>
+        <p class="pd-state__message" id="msg-idle"></p>
       </div>
 
       <!-- Scanning state — shown while scanning + downloading -->

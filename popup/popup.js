@@ -1,6 +1,7 @@
 // Pixel Drop — popup.js
 // Handles all popup UI interactions:
 // - Initialising the theme on load
+// - Proactively scanning tabs on popup open
 // - Wiring up the Quick Save button
 // - Communicating with the service worker
 // - Updating the UI state based on results
@@ -17,14 +18,15 @@ const stateSuccess = document.getElementById("state-success");
 const stateNone = document.getElementById("state-none");
 const stateError = document.getElementById("state-error");
 
+const msgIdle = document.getElementById("msg-idle");
 const msgSuccess = document.getElementById("msg-success");
 const msgError = document.getElementById("msg-error");
+const idleIcon = document.getElementById("idle-icon");
 
 // ─── State Management ─────────────────────────────────────────
 
 /**
  * Hides all state panels and shows only the requested one.
- * This is the single source of truth for what the popup displays.
  *
  * @param {'idle' | 'loading' | 'success' | 'none' | 'error'} state
  */
@@ -37,13 +39,67 @@ function showState(state) {
     error: stateError,
   };
 
-  // Hide all states first
   Object.values(states).forEach((el) => el.classList.add("pd-state--hidden"));
 
-  // Show the requested one
   if (states[state]) {
     states[state].classList.remove("pd-state--hidden");
   }
+}
+
+// ─── Proactive Tab Scanning ───────────────────────────────────
+
+/**
+ * Scans tabs as soon as the popup opens and updates the
+ * idle state to show how many image tabs are ready.
+ * Disables the Quick Save button if none are found.
+ *
+ * This gives the user immediate feedback without having
+ * to click anything first.
+ */
+async function scanOnOpen() {
+  // Show spinner while scanning
+  showState("loading");
+  msgLoading("Scanning tabs...");
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: "QUICK_SAVE_PREVIEW",
+    });
+
+    if (response.count === 0) {
+      // No images found — show none state and disable button
+      btnQuickSave.disabled = true;
+      showState("none");
+    } else {
+      // Images found — update idle state with count
+      const label =
+        response.count === 1
+          ? "1 image tab ready to save."
+          : `${response.count} image tabs ready to save.`;
+
+      msgIdle.textContent = label;
+
+      // Ensure the icon is visible and styled correctly
+      idleIcon.style.display = "flex";
+      btnQuickSave.disabled = false;
+      showState("idle");
+    }
+  } catch (error) {
+    // If preview scan fails, fall back to a generic ready message
+    // so the user can still attempt a save
+    msgIdle.textContent = "Ready to save all image tabs.";
+    btnQuickSave.disabled = false;
+    showState("idle");
+  }
+}
+
+/**
+ * Updates the loading message text.
+ * @param {string} text
+ */
+function msgLoading(text) {
+  const el = document.querySelector("#state-loading .pd-state__message");
+  if (el) el.textContent = text;
 }
 
 // ─── Quick Save ───────────────────────────────────────────────
@@ -54,24 +110,18 @@ function showState(state) {
  * the UI based on the response.
  */
 async function handleQuickSave() {
-  // Disable the button to prevent double-clicks
   btnQuickSave.disabled = true;
-
-  // Show the loading spinner
   showState("loading");
+  msgLoading("Downloading images...");
 
   try {
-    // Send the QUICK_SAVE action to the service worker
-    // Options object is empty for Phase 1 — Phase 2 will populate it
     const response = await chrome.runtime.sendMessage({
       action: "QUICK_SAVE",
       options: {},
     });
 
-    // Handle the response based on status
     switch (response.status) {
       case "success":
-        // Build a human-friendly result message
         msgSuccess.textContent =
           response.failed > 0
             ? `Saved ${response.succeeded} image${response.succeeded !== 1 ? "s" : ""}. ${response.failed} failed.`
@@ -93,14 +143,12 @@ async function handleQuickSave() {
         showState("idle");
     }
   } catch (error) {
-    // This can happen if the service worker is not responding
     msgError.textContent =
       "Could not connect to the extension. Try reloading it.";
     showState("error");
   }
 
-  // Re-enable the button after a short delay
-  // so the user can run another save if needed
+  // Re-enable after a delay so user can run another save
   setTimeout(() => {
     btnQuickSave.disabled = false;
   }, 2000);
@@ -108,11 +156,6 @@ async function handleQuickSave() {
 
 // ─── Settings ─────────────────────────────────────────────────
 
-/**
- * Opens the settings panel.
- * Chrome opens options_ui pages as a popup within the popup
- * when open_in_tab is set to false in manifest.json.
- */
 function handleOpenSettings() {
   chrome.runtime.openOptionsPage();
 }
@@ -122,14 +165,9 @@ btnQuickSave.addEventListener("click", handleQuickSave);
 btnSettings.addEventListener("click", handleOpenSettings);
 
 // ─── Initialise ───────────────────────────────────────────────
-
-/**
- * Entry point — runs when the popup is opened.
- * Initialises the theme and sets the default state.
- */
 async function init() {
   await initTheme();
-  showState("idle");
+  await scanOnOpen();
 }
 
 init();

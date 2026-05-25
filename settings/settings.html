@@ -2,6 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Pre-paint flash prevention — must load before body renders -->
+    <script src="prepaint.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pixel Drop — Settings</title>
 
@@ -11,23 +13,22 @@
     <!-- Theme is injected dynamically by theme.js at runtime -->
   </head>
   <body>
-    <!-- ─── Header ───────────────────────────────────────────── -->
-    <header class="pd-header">
-      <div class="pd-header__logo">
-        <img
-          src="../assets/icons/icon32.png"
-          alt="Pixel Drop"
-          class="pd-header__icon"
-        />
-        <div class="pd-header__titles">
-          <span class="pd-header__title">Pixel Drop</span>
-          <span class="pd-header__subtitle">Settings</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- ─── Main Content ─────────────────────────────────────── -->
+    <!-- ─── Main Content ───────────────────────────────────────────── -->
     <main class="pd-main">
+      <!-- ─── Header ───────────────────────────────────────────── -->
+      <header class="pd-header">
+        <div class="pd-header__logo">
+          <img
+            src="../assets/icons/icon32.png"
+            alt="Pixel Drop"
+            class="pd-header__icon"
+          />
+          <div class="pd-header__titles">
+            <span class="pd-header__title">Pixel Drop</span>
+            <span class="pd-header__subtitle">Settings</span>
+          </div>
+        </div>
+      </header>
       <!-- ─── Section: Appearance ───────────────────────────── -->
       <section class="pd-section">
         <h2 class="pd-section__title">Appearance</h2>

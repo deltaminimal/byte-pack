@@ -38,19 +38,28 @@ function detectOSTheme() {
 
 /**
  * Loads the user's saved theme from storage.
- * If no theme has been saved yet (first install),
- * auto-detects the OS and saves that as the default.
+ * Checks localStorage first (fast, synchronous) then falls
+ * back to chrome.storage.sync (slower, async).
+ * On first install, auto-detects the OS and saves that as default.
  *
  * @returns {Promise<string>} The theme name to apply
  */
 export async function loadTheme() {
+  // Fast path — check localStorage first
+  const local = localStorage.getItem(STORAGE_KEY);
+  if (local && Object.values(THEMES).includes(local)) {
+    return local;
+  }
+
+  // Slow path — check chrome.storage.sync
   return new Promise((resolve) => {
     chrome.storage.sync.get(STORAGE_KEY, (result) => {
       if (result[STORAGE_KEY]) {
-        // User has a saved preference — use it
+        // Found in sync storage — also save to localStorage for next time
+        localStorage.setItem(STORAGE_KEY, result[STORAGE_KEY]);
         resolve(result[STORAGE_KEY]);
       } else {
-        // First install — detect OS and save it
+        // First install — detect OS and save everywhere
         const detected = detectOSTheme();
         saveTheme(detected);
         resolve(detected);
@@ -60,14 +69,19 @@ export async function loadTheme() {
 }
 
 /**
- * Saves the user's theme choice to chrome.storage.sync.
- * Using sync means the preference follows the user across
- * devices where they are signed into Chrome/Edge.
+ * Saves the user's theme choice to both chrome.storage.sync
+ * and localStorage.
+ * - chrome.storage.sync: persists across devices
+ * - localStorage: available synchronously for pre-paint flash prevention
  *
  * @param {string} theme - One of the THEMES values
  * @returns {Promise<void>}
  */
 export async function saveTheme(theme) {
+  // Save to localStorage synchronously for instant pre-paint access
+  localStorage.setItem(STORAGE_KEY, theme);
+
+  // Save to chrome.storage.sync for cross-device persistence
   return new Promise((resolve) => {
     chrome.storage.sync.set({ [STORAGE_KEY]: theme }, resolve);
   });

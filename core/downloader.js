@@ -4,36 +4,55 @@
 // and reporting results back to the popup.
 
 /**
- * Extracts a filename from a URL if it looks clean and human-readable.
- * Falls back to a Pixel Drop timestamp name for anything that looks
- * like an ID, hash, or encoded string.
+ * Generates a human-readable timestamped filename.
+ * Format: pixeldrop-YYYY-MM-DD_HH-MM-SS.mmm.ext
+ * Example: pixeldrop-2026-05-25_14-32-07.423.jpg
  *
- * @param {string} url
+ * The millisecond component ensures uniqueness even when
+ * multiple images are downloaded in rapid succession.
+ *
+ * @param {string} url - Used only to detect the file extension
  * @returns {string} filename
  */
 function extractFilename(url) {
+  // Build a readable timestamp
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const mins = String(now.getMinutes()).padStart(2, "0");
+  const secs = String(now.getSeconds()).padStart(2, "0");
+  const ms = String(now.getMilliseconds()).padStart(3, "0");
+
+  const timestamp = `${year}-${month}-${day}_${hours}-${mins}-${secs}.${ms}`;
+
+  // Try to salvage just the file extension from the URL
   try {
-    const pathname = new URL(url).pathname;
-    const parts = pathname.split("/");
-    const raw = parts[parts.length - 1];
+    const pathname = new URL(url).pathname.toLowerCase();
+    const ext = pathname.split(".").pop();
+    const validExts = [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "webp",
+      "bmp",
+      "avif",
+      "tiff",
+    ];
 
-    if (raw && raw.includes(".")) {
-      const decoded = decodeURIComponent(raw);
-      const nameWithoutExt = decoded.split(".").slice(0, -1).join(".");
-
-      // If the name is short, readable, and doesn't look like a hash or ID
-      // (no long strings of random chars, no special symbols)
-      const looksClean = /^[a-zA-Z0-9_\-\s]{1,60}$/.test(nameWithoutExt);
-
-      if (looksClean) return decoded;
+    if (ext && validExts.includes(ext)) {
+      return `pixeldrop-${timestamp}.${ext}`;
     }
   } catch {
-    // Malformed URL — fall through
+    // Malformed URL — fall through to default
   }
 
-  // Default: clean timestamped name
-  return `pixel-drop-${Date.now()}.jpg`;
+  // Default fallback — .jpg is the safest assumption
+  return `pixeldrop-${timestamp}.jpg`;
 }
+
 /**
  * Downloads a single image from a given URL.
  * Duplicate filenames are handled automatically by the browser —
@@ -72,7 +91,9 @@ async function downloadImage(url, subfolder = null, filename = null) {
 
 /**
  * Downloads all images from a list of image tabs.
- * Runs concurrently and returns a summary of results.
+ * Runs sequentially with a small delay between each download
+ * to guarantee unique timestamps and avoid any browser-side
+ * filename conflicts.
  *
  * @param {chrome.tabs.Tab[]} imageTabs - Tabs identified as images
  * @param {object} [options] - Download options (expanded in Phase 2)
@@ -86,13 +107,21 @@ async function downloadImage(url, subfolder = null, filename = null) {
  */
 export async function downloadAllImages(imageTabs, options = {}) {
   const { subfolder = null } = options;
+  const results = [];
 
-  // Kick off all downloads concurrently
-  const results = await Promise.all(
-    imageTabs.map((tab) => downloadImage(tab.url, subfolder)),
-  );
+  // Process downloads sequentially with a small stagger
+  // instead of all at once — this guarantees each filename
+  // gets a unique timestamp and avoids browser conflicts
+  for (const tab of imageTabs) {
+    const result = await downloadImage(tab.url, subfolder);
+    results.push(result);
 
-  // Summarise the results to report back to the popup
+    // Small delay between downloads — enough to ensure
+    // unique timestamps without being noticeable to the user
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  // Summarise results to report back to the popup
   const succeeded = results.filter((r) => r.success).length;
   const failed = results.filter((r) => !r.success).length;
   const errors = results

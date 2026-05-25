@@ -12,14 +12,24 @@
   padding: 0;
 }
 
+html {
+  background: var(--pd-bg-base);
+  min-height: 100%;
+  width: 100%;
+}
+
 body {
-  width: 420px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
   font-family: var(--pd-font);
   font-size: var(--pd-font-size-base);
   color: var(--pd-text-primary);
-  background: var(--pd-bg-base);
+  background: transparent;
   overflow-x: hidden;
   user-select: none;
+  padding-top: var(--pd-space-md);
+  min-height: 100vh;
 }
 
 /* ─── Header ─────────────────────────────────────────────────── */
@@ -28,13 +38,16 @@ body {
   align-items: center;
   padding: var(--pd-space-md);
   background: var(--pd-bg-surface);
-  border-bottom: 1px solid var(--pd-border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  border: 1px solid var(--pd-border);
+  border-radius: var(--pd-radius-lg);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .pd-header__logo {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   gap: var(--pd-space-sm);
@@ -67,10 +80,14 @@ body {
 
 /* ─── Main Content ───────────────────────────────────────────── */
 .pd-main {
-  padding: var(--pd-space-md);
+  padding: var(--pd-space-md) var(--pd-space-md);
   display: flex;
   flex-direction: column;
   gap: var(--pd-space-md);
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* ─── Sections ───────────────────────────────────────────────── */
