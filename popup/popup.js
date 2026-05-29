@@ -12,6 +12,7 @@ import { initTheme } from "../ui/theme.js";
 const btnQuickSave = document.getElementById("btn-quick-save");
 const btnCloseTabs = document.getElementById("btn-close-tabs");
 const btnCloseTabsLabel = document.getElementById("btn-close-tabs-label");
+const btnSettings = document.getElementById("btn-settings");
 
 const stateIdle = document.getElementById("state-idle");
 const stateLoading = document.getElementById("state-loading");
@@ -176,6 +177,15 @@ async function scanOnOpen() {
   }
 }
 
+// ─── Open Settings ───────────────────────────────────────────────
+
+/**
+ * Handles the Open Settings button click.
+ */
+function handleOpenSettings() {
+  chrome.runtime.openOptionsPage();
+}
+
 // ─── Quick Save ───────────────────────────────────────────────
 
 /**
@@ -267,6 +277,7 @@ async function handleCloseTabs() {
 // ─── Event Listeners ──────────────────────────────────────────
 btnQuickSave.addEventListener("click", handleQuickSave);
 btnCloseTabs.addEventListener("click", handleCloseTabs);
+btnSettings.addEventListener("click", handleOpenSettings);
 
 // ─── Initialise ───────────────────────────────────────────────
 async function init() {
